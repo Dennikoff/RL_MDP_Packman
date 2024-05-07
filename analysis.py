@@ -65,6 +65,7 @@ def question6():
     return answerEpsilon, answerLearningRate
     # If not possible, return 'NOT POSSIBLE'
 
+
 if __name__ == '__main__':
     print 'Answers to analysis questions:'
     import analysis
