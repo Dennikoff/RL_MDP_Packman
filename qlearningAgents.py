@@ -43,6 +43,11 @@ class QLearningAgent(ReinforcementAgent):
         ReinforcementAgent.__init__(self, **args)
 
         "*** YOUR CODE HERE ***"
+        self.QVualues = {}
+
+    def setQValue(self, state, action, value):
+        self.QVualues[(state, action)] = value
+
 
     def getQValue(self, state, action):
         """
@@ -51,7 +56,10 @@ class QLearningAgent(ReinforcementAgent):
           or the Q node value otherwise
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        tempVal = self.QVualues.get((state, action))
+        if tempVal == None:
+            return 0.0
+        return tempVal
 
 
     def computeValueFromQValues(self, state):
@@ -62,7 +70,18 @@ class QLearningAgent(ReinforcementAgent):
           terminal state, you should return a value of 0.0.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        maxVal = None
+        actionList = self.getLegalActions(state)
+        if not len(actionList):
+            return 0.0
+        for action in actionList:
+            tempVal = self.getQValue(state, action)
+            if (maxVal == None) or (tempVal > maxVal):
+                maxVal = tempVal
+        return maxVal
+
+        
+            
 
     def computeActionFromQValues(self, state):
         """
@@ -71,7 +90,16 @@ class QLearningAgent(ReinforcementAgent):
           you should return None.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        bestActionList = []
+        actionList = self.getLegalActions(state)
+        bestValue = self.getValue(state)
+        for action in actionList:
+            tempVal = self.getQValue(state, action)
+            if tempVal == bestValue:
+                bestActionList.append(action)
+        if not len(bestActionList):
+            return None
+        return random.choice(bestActionList)
 
     def getAction(self, state):
         """
@@ -88,10 +116,14 @@ class QLearningAgent(ReinforcementAgent):
         legalActions = self.getLegalActions(state)
         action = None
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        if util.flipCoin(self.epsilon):
+            action = random.choice(legalActions)
+        else:
+            action = self.getPolicy(state)
 
         return action
-
+    
     def update(self, state, action, nextState, reward):
         """
           The parent class calls this to observe a
