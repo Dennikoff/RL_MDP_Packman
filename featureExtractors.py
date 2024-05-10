@@ -134,35 +134,41 @@ class SimpleExtractor(FeatureExtractor):
             # print('scared: ', distanceToScaredGhost, '\n', "active: ", distanceToActiveGhost)
 
             if ((distanceToActiveGhost == -1) or (distanceToScaredGhost < distanceToActiveGhost) and not areGhostsClose(closestScaredGhost, closestActiveGhost)) and (distanceToScaredGhost < 6):
-                print("EATING")
+                # print("EATING")
                 flagEating = True
-                features["count-of-scared-ghosts"] = len(scaredGhosts)
-                features["closest-scared-x"], features["closest-scared-y"] = closestScaredGhost.getPosition()
-                features["closest-scared-x"] -= x
-                features["closest-scared-y"] -= y
+                ghostX, ghostY = closestScaredGhost.getPosition()
+                features["scared-ghost-close-x"] == 3 - ghostX
+                features["scared-ghost-close-y"] == 3 - ghostY
+                features["eating-ghosts"] = 1.0
+                # features["closest-scared-x"], features["closest-scared-y"] = closestScaredGhost.getPosition()
+                # features["closest-scared-x"] -= x
+                # features["closest-scared-y"] -= y
 
-                print(features["closest-scared-x"], features["closest-scared-y"])
+                # print(features["closest-scared-x"], features["closest-scared-y"])
 
-                if features["closest-scared-x"] < 0.0:
-                    features["closest-scared-x"] = abs(features["closest-scared-x"])
-                    features["closest-scared-direction-x"] = 0.0
-                else:
-                    features["closest-scared-direction-x"] = 1.0
+                # if features["closest-scared-x"] < 0.0:
+                #     features["closest-scared-x"] = abs(features["closest-scared-x"])
+                #     features["closest-scared-direction-x"] = 0.0
+                # else:
+                #     features["closest-scared-direction-x"] = 1.0
                 
-                if features["closest-scared-y"] < 0.0:
-                    features["closest-scared-y"] = abs(features["closest-scared-y"])
-                    features["closest-scared-direction-y"] = 0.0
-                else:
-                    features["closest-scared-direction-y"] = 1.0
+                # if features["closest-scared-y"] < 0.0:
+                #     features["closest-scared-y"] = abs(features["closest-scared-y"])
+                #     features["closest-scared-direction-y"] = 0.0
+                # else:
+                #     features["closest-scared-direction-y"] = 1.0
 
-                print(features["closest-scared-x"], features["closest-scared-direction-x"])
-                print(features["closest-scared-y"], features["closest-scared-direction-y"])
+                # print(features["closest-scared-x"], features["closest-scared-direction-x"])
+                # print(features["closest-scared-y"], features["closest-scared-direction-y"])
                 
             
 
         # if there is no danger of ghosts then add the food feature
-        if not flagEating and not features["#-of-ghosts-1-step-away"] and (food[next_x][next_y] or features["closest-scared-x"] == next_x and features["closest-scared-y"] == next_y):
+        if not features["#-of-ghosts-1-step-away"] and (food[next_x][next_y]):
             features["eats-food"] = 1.0
+
+        if flagEating:
+            features["eats-food"] = 0.01
 
         dist = closestFood((next_x, next_y), food, walls)
         if dist is not None:
