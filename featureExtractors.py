@@ -137,8 +137,8 @@ class SimpleExtractor(FeatureExtractor):
                 # print("EATING")
                 flagEating = True
                 ghostX, ghostY = closestScaredGhost.getPosition()
-                features["scared-ghost-close-x"] == 3 - ghostX
-                features["scared-ghost-close-y"] == 3 - ghostY
+                features["scared-ghost-close-x"] == 2 - ghostX
+                features["scared-ghost-close-y"] == 2 - ghostY
                 features["eating-ghosts"] = 1.0
                 # features["closest-scared-x"], features["closest-scared-y"] = closestScaredGhost.getPosition()
                 # features["closest-scared-x"] -= x
@@ -174,10 +174,7 @@ class SimpleExtractor(FeatureExtractor):
         if dist is not None:
             # make the distance a number less than one otherwise the update
             # will diverge wildly
-            if flagEating:
-                features["closest-food"] = min(distanceToScaredGhost, float(dist)) / (walls.width * walls.height)
-            else:
-                features["closest-food"] = float(dist) / (walls.width * walls.height)
+            features["closest-food"] = float(dist) / (walls.width * walls.height)
         
             
 
