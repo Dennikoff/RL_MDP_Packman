@@ -72,11 +72,29 @@ class SimpleExtractor(FeatureExtractor):
     - whether a ghost is one step away
     """
 
+
     def getFeatures(self, state, action):
+
+        def getClosestGhost(state, ghosts):
+            dist = []
+            for ghost in ghosts:
+                dist.append(util.manhattanDistance(state.getPacmanPosition(), ghost.getPosition()))
+            return min(dist)
+        
         # extract the grid of food and wall locations and get the ghost locations
         food = state.getFood()
         walls = state.getWalls()
         ghosts = state.getGhostPositions()
+        ghostStates = state.getGhostStates()
+
+        scaredGhosts = []
+        activeGhosts = []
+        
+        for ghost in ghostStates:
+            if ghost.isScared():
+                scaredGhosts.append(ghost)
+            else:
+                activeGhosts.append(ghost)
 
         features = util.Counter()
 
@@ -87,11 +105,29 @@ class SimpleExtractor(FeatureExtractor):
         dx, dy = Actions.directionToVector(action)
         next_x, next_y = int(x + dx), int(y + dy)
 
+        features["eats-ghosts"] = 0.0
+
         # count the number of ghosts 1-step away
-        features["#-of-ghosts-1-step-away"] = sum((next_x, next_y) in Actions.getLegalNeighbors(g, walls) for g in ghosts)
+        if len(scaredGhosts) != 0:
+            distanceToScaredGhost = getClosestGhost(state, scaredGhosts)
+            distanceToActiveGhost = -1
+            if len(activeGhosts) != 0:
+                distanceToActiveGhost = getClosestGhost(state, activeGhosts)
+            
+            # print('scared: ', distanceToScaredGhost, '\nactive: ', distanceToActiveGhost)
+
+            if (distanceToScaredGhost < distanceToActiveGhost - 4) or (distanceToScaredGhost and distanceToActiveGhost == -1):
+                print('scared: ', distanceToScaredGhost, '\nactive: ', distanceToActiveGhost)
+                features["eats-ghosts"] = 1.0
+                features["count-of-scared-ghosts"] = len(scaredGhosts)
+                features["#-of-ghosts-1-step-away"] = 0
+            else:
+                 features["#-of-ghosts-1-step-away"] = 1
+        else: 
+            features["#-of-ghosts-1-step-away"] = sum((next_x, next_y) in Actions.getLegalNeighbors(g, walls) for g in ghosts)
 
         # if there is no danger of ghosts then add the food feature
-        if not features["#-of-ghosts-1-step-away"] and food[next_x][next_y]:
+        if not features["#-of-ghosts-1-step-away"] and food[next_x][next_y] and features["eats-ghosts"] == 0.0:
             features["eats-food"] = 1.0
 
         dist = closestFood((next_x, next_y), food, walls)
@@ -99,5 +135,16 @@ class SimpleExtractor(FeatureExtractor):
             # make the distance a number less than one otherwise the update
             # will diverge wildly
             features["closest-food"] = float(dist) / (walls.width * walls.height)
+        
+        if features['eats-ghosts'] != 0.0:
+            features["closest-ghost"] = float(getClosestGhost(state, scaredGhosts)) / (walls.width * walls.height)
+
+
+        
+
         features.divideAll(10.0)
+        
+        if features['eats-ghosts'] != 0.0:
+            print('food: ', features["eats-food"])
+            print('ghost: ', features["eats-ghosts"])
         return features

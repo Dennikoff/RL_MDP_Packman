@@ -159,6 +159,9 @@ class AgentState:
     def getDirection(self):
         return self.configuration.getDirection()
 
+    def isScared(self):
+        return self.scaredTimer > 0
+
 class Grid:
     """
     A 2-dimensional array of objects backed by a list of lists.  Data is accessed
