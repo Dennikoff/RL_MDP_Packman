@@ -63,6 +63,25 @@ def closestFood(pos, food, walls):
     # no food found
     return None
 
+def closestGhost(pos, target_pos, walls):
+
+    fringe = [(pos[0], pos[1], 0)]
+    expanded = set()
+    while fringe:
+        pos_x, pos_y, dist = fringe.pop(0)
+        if (pos_x, pos_y) in expanded:
+            continue
+        expanded.add((pos_x, pos_y))
+        
+        if (pos_x, pos_y) == target_pos:
+            return dist
+        
+        nbrs = Actions.getLegalNeighbors((pos_x, pos_y), walls)
+        for nbr_x, nbr_y in nbrs:
+            fringe.append((nbr_x, nbr_y, dist + 1))
+    
+    return None
+
 class SimpleExtractor(FeatureExtractor):
     """
     Returns simple features for a basic reflex Pacman:
@@ -78,12 +97,12 @@ class SimpleExtractor(FeatureExtractor):
         def areGhostsClose(ghostScared, ghostActive):
             return util.manhattanDistance(ghostScared.getPosition(), ghostActive.getPosition()) < 3
 
-        def getClosestGhost(state, ghosts):
+        def getClosestGhost(position, ghosts):
             minDist = None
             minGhost = None
 
             for ghost in ghosts:
-                dist = util.manhattanDistance(state.getPacmanPosition(), ghost.getPosition())
+                dist = util.manhattanDistance(position, ghost.getPosition())
                 if dist < minDist or minDist == None:
                     minDist = dist
                     minGhost = ghost
@@ -128,18 +147,22 @@ class SimpleExtractor(FeatureExtractor):
         flagEating = False
         # count the number of ghosts 1-step away
         if len(scaredGhosts) != 0:
-            distanceToScaredGhost, closestScaredGhost = getClosestGhost(state, scaredGhosts)
+            distanceToScaredGhost, closestScaredGhost = getClosestGhost((next_x, next_y), scaredGhosts)
             if len(activeGhosts) != 0:
-                distanceToActiveGhost, closestActiveGhost = getClosestGhost(state, activeGhosts)
+                distanceToActiveGhost, closestActiveGhost = getClosestGhost((next_x, next_y), activeGhosts)
             # print('scared: ', distanceToScaredGhost, '\n', "active: ", distanceToActiveGhost)
 
-            if ((distanceToActiveGhost == -1) or (distanceToScaredGhost < distanceToActiveGhost) and not areGhostsClose(closestScaredGhost, closestActiveGhost)) and (distanceToScaredGhost < 6):
+            if ((distanceToActiveGhost == -1) or (distanceToScaredGhost < distanceToActiveGhost) and not areGhostsClose(closestScaredGhost, closestActiveGhost)) and (distanceToScaredGhost < 14):
                 # print("EATING")
-                flagEating = True
-                ghostX, ghostY = closestScaredGhost.getPosition()
-                features["scared-ghost-close-x"] == 2 - ghostX
-                features["scared-ghost-close-y"] == 2 - ghostY
-                features["eating-ghosts"] = 1.0
+                # distToGhost = closestGhost((next_x, next_y), closestScaredGhost.getPosition(), walls)
+                # if distToGhost is not None:
+                
+                distToGhost = closestGhost((next_x, next_y), closestScaredGhost.getPosition(), walls)
+                print(distanceToScaredGhost, distToGhost)
+                if (distToGhost != None):
+                    flagEating = True
+                    features["closest-ghost"] = float(distToGhost) / (walls.width * walls.height)
+                    features["eating-ghosts"] = 1.0
                 # features["closest-scared-x"], features["closest-scared-y"] = closestScaredGhost.getPosition()
                 # features["closest-scared-x"] -= x
                 # features["closest-scared-y"] -= y
@@ -171,10 +194,12 @@ class SimpleExtractor(FeatureExtractor):
             features["eats-food"] = 0.01
 
         dist = closestFood((next_x, next_y), food, walls)
-        if dist is not None:
+        if dist is not None and not flagEating:
             # make the distance a number less than one otherwise the update
             # will diverge wildly
             features["closest-food"] = float(dist) / (walls.width * walls.height)
+
+        
         
             
 
