@@ -63,7 +63,7 @@ def closestFood(pos, food, walls):
     # no food found
     return None
 
-def distanceToCoords(pos, coords, walls):
+def cordsToDistances(pos, coords, walls):
     fringe = [(pos[0], pos[1], 0)]
     expanded = set()
     coords = map((lambda coord: (int(coord[0]), int(coord[1]))), coords)
@@ -96,20 +96,6 @@ class SimpleExtractor(FeatureExtractor):
 
 
     def getFeatures(self, state, action):
-
-        def areGhostsClose(ghostScared, ghostActive):
-            return util.manhattanDistance(ghostScared.getPosition(), ghostActive.getPosition()) < 3
-
-        def getClosestGhost(position, ghosts):
-            minDist = None
-            minGhost = None
-
-            for ghost in ghosts:
-                dist = util.manhattanDistance(position, ghost.getPosition())
-                if dist < minDist or minDist == None:
-                    minDist = dist
-                    minGhost = ghost
-            return minDist, minGhost
         
         # extract the grid of food and wall locations and get the ghost locations
         food = state.getFood()
@@ -117,6 +103,7 @@ class SimpleExtractor(FeatureExtractor):
         ghosts = state.getGhostPositions()
         ghostStates = state.getGhostStates()
 
+        capsules = state.getCapsules()
         scaredGhosts = []
         activeGhosts = []
         
@@ -136,7 +123,7 @@ class SimpleExtractor(FeatureExtractor):
         next_x, next_y = int(x + dx), int(y + dy)
 
         features["eats-ghosts"] = 0.0
-
+        
         # features["#-of-ghosts-1-step-away"] = sum((next_x, next_y) in Actions.getLegalNeighbors(g, walls) for g in ghosts)
         sumVal = 0
         for g in ghostStates:
@@ -158,14 +145,20 @@ class SimpleExtractor(FeatureExtractor):
         # count the number of ghosts 1-step away
         if len(scaredGhosts) != 0:
             targetPoses = getTargetPoses(scaredGhosts)
-            distToGhost = distanceToCoords((next_x, next_y), targetPoses, walls)
+            distToGhost = cordsToDistances((next_x, next_y), targetPoses, walls)
             print('ghost Dist: ', distToGhost)
             if (distToGhost != None):
                 flagEating = True
                 features["closest-ghost"] = float(min(distToGhost)) / (walls.width * walls.height)
                 features["eating-ghosts"] = 1.0
-            
-            
+        
+        
+        capsulesDists = cordsToDistances((next_x, next_y), capsules, walls)
+        flagCapsules = False
+        if capsulesDists != [] and not flagEating:
+            flagCapsules = True
+            features["eating-capsules"] = 1.0
+            features["closest-capsule"] = float(min(capsulesDists)) / (walls.width * walls.height)  
                 
             
 
@@ -173,14 +166,14 @@ class SimpleExtractor(FeatureExtractor):
         if not features["#-of-ghosts-1-step-away"] and (food[next_x][next_y]):
             features["eats-food"] = 1.0
 
-        if flagEating:
+        if flagEating or flagCapsules:
             features["eats-food"] = 0.01
 
         dist = closestFood((next_x, next_y), food, walls)
 
         print('food Dist: ', dist)
 
-        if dist is not None and not flagEating:
+        if dist is not None and not (flagEating or flagCapsules):
             # make the distance a number less than one otherwise the update
             # will diverge wildly
             features["closest-food"] = float(dist) / (walls.width * walls.height)
